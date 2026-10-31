@@ -2,7 +2,7 @@
 
 All notable changes to NotchUtils are listed here. Versions follow [Semantic Versioning](https://semver.org).
 
-## [1.1.0] - Unreleased
+## [1.1.0] - 2026-11-01
 
 ### Added
 
