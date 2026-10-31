@@ -124,11 +124,12 @@ What the helper does, and doesn't do:
 
 - It accepts only four commands (read status, check in, set a speed, return to automatic), and only from the logged-in user.
 - It keeps speeds between what macOS wanted when you took over and each fan's maximum.
-- It returns the fans to automatic if the app quits, crashes or stops checking in for 10 seconds, if the Mac gets hot, if macOS takes the fans back, or if the helper itself stops. The Mac going to sleep has the same effect.
+- It returns the fans to automatic if the app quits, crashes or stops checking in for 10 seconds, if the Mac gets hot, if macOS takes the fans back, or if the helper itself stops. It's designed to do the same when the Mac wakes from sleep.
 - It doesn't run commands, read files or use the network.
 
 The risks are worth understanding:
 
+- **Not everything has been tried on real hardware.** On an M1 Pro, we've tested the speed limits, Max, removing and updating the helper, and returning to automatic when the app stops, the helper stops or the Mac gets hot. Waking from sleep, restarting and closing the lid with an external display attached have only been simulated or not tested at all, so please [tell us](https://github.com/rupajsen/NotchUtils/issues/new/choose) if they misbehave.
 - **Manual doesn't react to load.** The fans hold the speed you set, even if macOS would have gone faster, until the temperature fallback steps in at a 90°C average. For heavy work, choose a high speed or Max, or stay on Automatic.
 - **This uses undocumented hardware controls.** Apple could change how they behave in any macOS update. NotchUtils is provided without warranty, as the [license](LICENSE) says.
 
