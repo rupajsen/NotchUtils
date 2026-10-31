@@ -1,0 +1,19 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the app
+        run: scripts/build.sh
+      - name: Build the demo renderer
+        run: swift build -c release -Xswiftc -DDEMO --build-path .build-demo

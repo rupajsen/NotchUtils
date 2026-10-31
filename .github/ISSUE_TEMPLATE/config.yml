@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💡 Suggest an idea
+    url: https://github.com/rupajsen/NotchUtils/discussions/categories/ideas
+    about: Feature ideas and suggestions are very welcome. Share them in Discussions.
+  - name: 💬 Ask a question
+    url: https://github.com/rupajsen/NotchUtils/discussions
+    about: Get help or talk about NotchUtils.
