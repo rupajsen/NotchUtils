@@ -62,6 +62,7 @@ enum Script {
         var text: String
         var notAuthorized: Bool
         var succeeded: Bool
+        var cancelled = false
     }
 
     static func run(_ source: String) async -> Output {
@@ -82,7 +83,8 @@ enum Script {
             return Output(
                 text: String(decoding: data, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines),
                 notAuthorized: errText.contains("-1743"),
-                succeeded: process.terminationStatus == 0
+                succeeded: process.terminationStatus == 0,
+                cancelled: errText.contains("-128")
             )
         }.value
     }

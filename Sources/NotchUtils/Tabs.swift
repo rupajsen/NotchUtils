@@ -377,13 +377,15 @@ struct Meter: View {
     let title: String
     let value: Double
     let tint: Color
+    var suffix = ""
+    var spokenValue: String?
 
     var body: some View {
         VStack(spacing: 5) {
             Gauge(value: min(max(value, 0), 1)) {
                 EmptyView()
             } currentValueLabel: {
-                Text(Int((value * 100).rounded()), format: .number)
+                Text("\(Int((value * 100).rounded()))\(suffix)")
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .monospacedDigit()
             }
@@ -398,7 +400,7 @@ struct Meter: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
-        .accessibilityValue(Text(value, format: .percent.precision(.fractionLength(0))))
+        .accessibilityValue(spokenValue.map { Text($0) } ?? Text(value, format: .percent.precision(.fractionLength(0))))
     }
 }
 
@@ -431,6 +433,271 @@ struct QuickAction: View {
         }
         .buttonStyle(PressableStyle())
         .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+}
+
+// MARK: - Thermals
+
+struct ThermalsTab: View {
+    @ObservedObject var fans: FanModel
+
+    var body: some View {
+        Group {
+            if fans.availability == .noFans {
+                fanlessLayout
+            } else {
+                HStack(spacing: 16) {
+                    Grid(horizontalSpacing: 0, verticalSpacing: 8) {
+                        ForEach(Array(stride(from: 0, to: fans.readings.count, by: 2)), id: \.self) { start in
+                            GridRow {
+                                ForEach(fans.readings[start..<min(start + 2, fans.readings.count)]) {
+                                    TemperatureMeter(reading: $0)
+                                }
+                            }
+                        }
+                    }
+                    .frame(width: 148)
+                    .frame(maxHeight: .infinity, alignment: .top)
+
+                    fanColumn.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                }
+            }
+        }
+        .onAppear { fans.startMonitoring() }
+        .onDisappear { fans.stopMonitoring() }
+    }
+
+    /// Macs without fans get the temperatures on their own, with nothing that hints at a missing feature.
+    private var fanlessLayout: some View {
+        VStack(spacing: 14) {
+            if fans.readings.isEmpty {
+                ThermalsNote(symbol: "thermometer.medium.slash", text: "Temperatures aren't available on this Mac.")
+            } else {
+                HStack(spacing: 0) {
+                    ForEach(fans.readings) { TemperatureMeter(reading: $0) }
+                }
+                .frame(maxHeight: .infinity)
+                Label("This Mac cools itself silently, without fans.", systemImage: "wind")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    @ViewBuilder private var fanColumn: some View {
+        switch fans.availability {
+        case .checking:
+            ProgressView().controlSize(.small).frame(maxWidth: .infinity, maxHeight: .infinity)
+        case .noFans:
+            EmptyView()
+        case .unsupported:
+            VStack(alignment: .leading, spacing: 10) {
+                ForEach(fans.fans) { FanRow(fan: $0, isEnabled: false) { _ in } }
+                Text("Fan control isn't available on this Mac yet.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+            }
+        case .needsHelper, .helperOutdated:
+            VStack(alignment: .leading, spacing: 8) {
+                Text(fans.availability == .needsHelper
+                    ? "Fan control needs a small helper that runs in the background with administrator access."
+                    : "The fan helper needs updating to match this version of NotchUtils.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                ForEach(fans.fans) { FanRow(fan: $0, isEnabled: false) { _ in } }
+                Spacer(minLength: 0)
+                HStack(spacing: 10) {
+                    CapsuleButton(
+                        title: helperButtonTitle,
+                        symbol: "lock.fill",
+                        isProminent: true,
+                        action: fans.installHelper
+                    )
+                    if fans.isExperimental { ExperimentalTag() }
+                }
+                if let error = fans.helperError {
+                    Text(error).font(.system(size: 11)).foregroundStyle(.red)
+                }
+            }
+        case .ready:
+            controls
+        }
+    }
+
+    private var helperButtonTitle: String {
+        if fans.availability == .helperOutdated {
+            return fans.isChangingHelper ? "Updating" : "Update Fan Helper"
+        }
+        return fans.isChangingHelper ? "Setting Up" : "Set Up Fan Control"
+    }
+
+    private var controls: some View {
+        VStack(alignment: .leading, spacing: 9) {
+            FanModePicker(mode: fans.mode, onChange: fans.setMode)
+            ForEach(fans.fans) { fan in
+                FanRow(fan: fan, isEnabled: fan.isManual) { fans.setSpeed(fan: fan.id, rpm: $0) }
+            }
+            if fans.isExperimental { ExperimentalTag() }
+            Spacer(minLength: 0)
+            HStack(alignment: .bottom, spacing: 6) {
+                Text(noteText)
+                    .font(.system(size: 11))
+                    .foregroundStyle(fans.fallbackReason == nil ? Color.secondary : Color.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+                if fans.mode == .automatic {
+                    Button(action: fans.removeHelper) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 20, height: 20)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(PressableStyle())
+                    .help("Remove the fan helper")
+                    .accessibilityLabel("Remove the fan helper")
+                }
+            }
+        }
+    }
+
+    private var noteText: String {
+        switch fans.fallbackReason {
+        case "hot": return "Back to automatic: the Mac is running hot."
+        case "lease": return "Back to automatic: the app stopped responding."
+        case "helper stopped": return "Back to automatic: the helper stopped."
+        case "refused": return "macOS wouldn't give up control of the fans just now."
+        case "system": return "Back to automatic: macOS took back control of the fans."
+        default: break
+        }
+        if fans.isEngaging { return "Taking control of the fans. This can take a few seconds." }
+        switch fans.mode {
+        case .automatic: return "macOS is managing the fans."
+        // The Experimental tag takes the second line these otherwise use.
+        case .manual where fans.isExperimental, .max where fans.isExperimental:
+            return "Returns to automatic if the Mac gets hot or the app stops."
+        case .manual: return "Can't go below the automatic speed. Returns to automatic if the Mac gets hot or the app stops."
+        case .max: return "Fans at full speed. Returns to automatic if the Mac gets hot or the app stops."
+        }
+    }
+}
+
+/// Fan control on this Mac rests on other people's research, not testing on this model.
+struct ExperimentalTag: View {
+    var body: some View {
+        Label("Experimental on this Mac", systemImage: "exclamationmark.triangle.fill")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(.yellow)
+            .help("Fan control hasn't been tested on this Mac model yet. Tell us how it goes on GitHub.")
+    }
+}
+
+struct ThermalsNote: View {
+    let symbol: String
+    let text: String
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Image(systemName: symbol)
+                .font(.system(size: 22))
+                .foregroundStyle(.secondary)
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct TemperatureMeter: View {
+    let reading: FanModel.Reading
+
+    private var tint: Color {
+        switch reading.celsius {
+        case 95...: return .red
+        case 85...: return .orange
+        default: break
+        }
+        switch reading.name {
+        case "CPU": return .blue
+        case "GPU": return .purple
+        case "SSD": return .orange
+        case "Battery": return .green
+        default: return .white
+        }
+    }
+
+    var body: some View {
+        Meter(
+            title: reading.name,
+            value: Double(reading.celsius) / 100,
+            tint: tint,
+            suffix: "°",
+            spokenValue: "\(reading.celsius) degrees Celsius"
+        )
+    }
+}
+
+struct FanModePicker: View {
+    let mode: FanModel.Mode
+    let onChange: (FanModel.Mode) -> Void
+
+    var body: some View {
+        HStack(spacing: 0) {
+            segment("Automatic", .automatic)
+            segment("Manual", .manual)
+            segment("Max", .max)
+        }
+        .padding(2)
+        .background(Capsule().fill(.white.opacity(0.08)))
+    }
+
+    private func segment(_ title: String, _ value: FanModel.Mode) -> some View {
+        Button { onChange(value) } label: {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(mode == value ? .black : .secondary)
+                .frame(maxWidth: .infinity)
+                .frame(height: 24)
+                .background(Capsule().fill(mode == value ? Color.white : Color.clear))
+                .contentShape(Capsule())
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityAddTraits(mode == value ? .isSelected : [])
+    }
+}
+
+struct FanRow: View {
+    let fan: FanModel.Fan
+    let isEnabled: Bool
+    let onChange: (Double) -> Void
+
+    private var lowerBound: Double {
+        fan.isManual ? max(fan.floor, fan.minimum) : fan.minimum
+    }
+
+    var body: some View {
+        VStack(spacing: 1) {
+            HStack {
+                Text(fan.name).foregroundStyle(.secondary)
+                Spacer()
+                Text("\(Int(fan.rpm).formatted()) rpm")
+                    .fontWeight(.medium)
+                    .monospacedDigit()
+            }
+            .font(.system(size: 12))
+            CapsuleSlider(
+                value: fan.isManual ? fan.target : fan.rpm,
+                range: min(lowerBound, fan.maximum - 1)...fan.maximum,
+                showsThumb: isEnabled,
+                onChange: onChange
+            )
+            .disabled(!isEnabled)
+            .opacity(isEnabled ? 1 : 0.35)
+            .accessibilityLabel(fan.name)
+        }
     }
 }
 

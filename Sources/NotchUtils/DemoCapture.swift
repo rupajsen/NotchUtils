@@ -93,7 +93,7 @@ private struct DemoStage: View {
                 CompactView(
                     activity: .media,
                     notchWidth: notch.width,
-                    media: controller.media, timer: controller.timer, system: controller.system
+                    media: controller.media, timer: controller.timer, system: controller.system, fans: controller.fans
                 )
                 .frame(width: notch.width + CompactActivity.media.wing * 2, height: notch.height)
                 .opacity(max(1 - open * 3, 0))
@@ -143,6 +143,7 @@ final class DemoCapture {
         controller.media.loadDemo(artwork: Self.makeArtwork())
         controller.timer.loadDemo()
         controller.system.loadDemo()
+        controller.fans.loadDemo()
         controller.shelf.loadDemo(Self.makeShelfFiles())
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
@@ -155,6 +156,28 @@ final class DemoCapture {
             writePNG(frame(open: 1), name: "\(tab.rawValue).png")
         }
         writeGIF()
+        NSApp.terminate(nil)
+    }
+
+    /// Every state of the Thermals tab, for checking the design. Not used in the README.
+    func runThermalsStates() {
+        controller.hidePanelForDemo()
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        controller.tab = .thermals
+        let states: [(String, FanModel.Mode, Bool, Bool, Bool)] = [
+            ("automatic", .automatic, false, false, false),
+            ("manual", .manual, false, false, false),
+            ("max", .max, false, false, false),
+            ("fanless", .automatic, true, false, false),
+            ("experimental-manual", .manual, false, true, false),
+            ("experimental-setup", .automatic, false, true, true),
+        ]
+        for (name, mode, fanless, experimental, needsHelper) in states {
+            controller.fans.loadDemo(mode: mode, fanless: fanless, experimental: experimental, needsHelper: needsHelper)
+            hosting.rootView = DemoStage(controller: controller, open: 1)
+            settle(0.8)
+            writePNG(frame(open: 1), name: "thermals-\(name).png")
+        }
         NSApp.terminate(nil)
     }
 
@@ -192,7 +215,7 @@ final class DemoCapture {
 
     private func writeGIF() {
         let fps = 20.0
-        let tabX: [NotchTab: CGFloat] = [.media: 148, .timer: 182, .shelf: 216, .system: 250, .credits: 284]
+        let tabX: [NotchTab: CGFloat] = [.media: 146, .timer: 175, .shelf: 204, .system: 233, .thermals: 262, .credits: 291]
         let tabY: CGFloat = 12
         let beats: [Beat] = [
             Beat(seconds: 1.0),
@@ -204,6 +227,8 @@ final class DemoCapture {
             Beat(seconds: 1.5, tab: .shelf),
             Beat(seconds: 0.3, cursorTo: CGPoint(x: tabX[.system]!, y: tabY)),
             Beat(seconds: 1.5, tab: .system),
+            Beat(seconds: 0.3, cursorTo: CGPoint(x: tabX[.thermals]!, y: tabY)),
+            Beat(seconds: 1.8, tab: .thermals),
             Beat(seconds: 0.3, cursorTo: CGPoint(x: tabX[.credits]!, y: tabY)),
             Beat(seconds: 1.8, tab: .credits),
             Beat(seconds: 0.6, cursorTo: CGPoint(x: 640, y: 285)),

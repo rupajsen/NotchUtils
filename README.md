@@ -6,7 +6,7 @@
 
 **Your notch, put to work.**
 
-Music controls, a focus timer, a file shelf and system stats, all living in your MacBook's notch.<br>
+Music controls, a focus timer, a file shelf, system stats and fan control, all living in your MacBook's notch.<br>
 Native, lightweight and free. Hover to open, move away to close.
 
 [![Latest release](https://img.shields.io/github/v/release/rupajsen/NotchUtils?color=FF6A1F&label=download)](https://github.com/rupajsen/NotchUtils/releases/latest)
@@ -14,7 +14,7 @@ Native, lightweight and free. Hover to open, move away to close.
 [![macOS 26+](https://img.shields.io/badge/macOS-26%2B-black?logo=apple)](#requirements)
 [![Suggestions welcome](https://img.shields.io/badge/suggestions-welcome-brightgreen)](https://github.com/rupajsen/NotchUtils/discussions/categories/ideas)
 
-<img src="docs/images/demo.gif" width="800" alt="The notch opens on hover and moves through the Now Playing, Timer, Shelf, System and Credits tabs">
+<img src="docs/images/demo.gif" width="800" alt="The notch opens on hover and moves through the Now Playing, Timer, Shelf, System, Thermals and Credits tabs">
 
 <sub>Rendered from the app's real interface with made-up data.</sub>
 
@@ -48,8 +48,13 @@ Battery, CPU, memory and storage at a glance, plus a volume slider, Keep Awake, 
 
 <img src="docs/images/system.png" width="720" alt="System tab with four gauges, a volume slider and quick action buttons">
 
+### 🌡️ Thermals
+Live temperatures, plus Automatic, Manual and Max fan control on MacBook Pro models. Manual can only speed the fans up, never run them slower than macOS wanted. See [what's available on your Mac](#what-your-mac-gets) and [how it stays safe](#fan-control-safety).
+
+<img src="docs/images/thermals.png" width="720" alt="Thermals tab with temperature rings for CPU, GPU, SSD and battery, and fan speed sliders in Manual mode">
+
 ### ✨ Live activity in the closed notch
-The notch widens only when there's something to show: the current track, a running timer, a charging flash or Keep Awake.
+The notch widens only when there's something to show: the current track, a running timer, manual fan control, a charging flash or Keep Awake.
 
 <img src="docs/images/closed.png" width="720" alt="The closed notch showing album art on the left and audio bars on the right">
 
@@ -88,9 +93,46 @@ Developed and tested on a 14-inch MacBook Pro (M1 Pro) running macOS 27. If you 
 | Keep it open | Click the pin icon |
 | Add files to the Shelf | Drag them onto the notch |
 | Open a Shelf file | Click it |
+| Control the fans | **Thermals** tab → **Set Up Fan Control** the first time |
+| Remove the fan helper | **Thermals** tab, on Automatic → trash icon |
 | Quit | **System** tab → **Quit** |
 
 The first time it sees Spotify or Music running, macOS asks whether NotchUtils may control that app. Allow it to use Now Playing. You can change this later in **System Settings → Privacy & Security → Automation**.
+
+## What your Mac gets
+
+NotchUtils works on MacBooks with a notch. Thermals depends on the model:
+
+| Mac | Fans | Fan control | Temperatures |
+| --- | --- | --- | --- |
+| 14-inch and 16-inch MacBook Pro, M1 Pro or Max | 2 | ✅ Tested on M1 Pro | CPU, GPU, SSD, battery |
+| 14-inch and 16-inch MacBook Pro, M2 Pro or Max | 2 | 🧪 Experimental | CPU, GPU, SSD, battery |
+| 14-inch and 16-inch MacBook Pro, M3 or M4 family | 1 on base 14-inch, 2 on others | 🧪 Experimental | SSD, battery |
+| 14-inch and 16-inch MacBook Pro, M5 family | 1 on base 14-inch, 2 on others | 🧪 Experimental | SSD, battery |
+| MacBook Air, M2 | None | Not needed | CPU, GPU, SSD, battery |
+| MacBook Air, M3, M4 or M5 | None | Not needed | SSD, battery |
+
+**Experimental means we haven't been able to test it on that Mac.** Apple doesn't document fan control. On those models NotchUtils follows notes published by other developers, and it has only been checked against simulations of them. If it doesn't work, the app should say so and stay on automatic.
+
+**Have one of these Macs?** Please [tell us how it went](https://github.com/rupajsen/NotchUtils/discussions). That's how a model moves from Experimental to tested. Temperatures are limited for the same reason: sensor names differ between chips, and a wrong label is worse than a missing one.
+
+## Fan control safety
+
+Changing fan speeds requires root, so fan control uses a small helper that runs in the background as a system service with administrator access. **It's optional:** nothing is installed until you click **Set Up Fan Control** and approve the macOS password prompt.
+
+What the helper does, and doesn't do:
+
+- It accepts only four commands (read status, check in, set a speed, return to automatic), and only from the logged-in user.
+- It keeps speeds between what macOS wanted when you took over and each fan's maximum.
+- It returns the fans to automatic if the app quits, crashes or stops checking in for 10 seconds, if the Mac gets hot, if macOS takes the fans back, or if the helper itself stops. The Mac going to sleep has the same effect.
+- It doesn't run commands, read files or use the network.
+
+The risks are worth understanding:
+
+- **Manual doesn't react to load.** The fans hold the speed you set, even if macOS would have gone faster, until the temperature fallback steps in at a 95°C average. For heavy work, choose a high speed or Max, or stay on Automatic.
+- **This uses undocumented hardware controls.** Apple could change how they behave in any macOS update. NotchUtils is provided without warranty, as the [license](LICENSE) says.
+
+To remove the helper, go to the **Thermals** tab, switch to Automatic and click the trash icon.
 
 ## Privacy
 
@@ -103,17 +145,19 @@ NotchUtils has no accounts, analytics or telemetry. Its only network request is 
 - **Audio bars:** they're decorative and don't reflect the actual audio levels.
 - **Volume slider:** it's unavailable for outputs that control their own volume, such as many HDMI and DisplayPort monitors.
 - **Lid closed:** NotchUtils hides when the built-in display is off, since there's no notch to sit in.
+- **Fan control:** Manual can only raise fan speeds. Models we haven't tested are marked [Experimental](#what-your-mac-gets).
+- **Fan helper:** you'll be asked to update it when a new version of NotchUtils changes it.
 
 ## 💡 Got an idea? Let's make it better together
 
-**Please feel free to add suggestions!** NotchUtils is young and your ideas will shape what it becomes. Missing a feature? Something feel off? Every suggestion is welcome, big or small.
+**Please feel free to add suggestions!** NotchUtils is young and your ideas will shape what it becomes. Missing a feature? Something feel off? Every suggestion is welcome, big or small. And if you have a MacBook other than an M1 Pro, trying fan control and reporting back is a big help.
 
 - 💬 [**Share an idea**](https://github.com/rupajsen/NotchUtils/discussions/categories/ideas) in Discussions
 - 🐛 [**Report a bug**](https://github.com/rupajsen/NotchUtils/issues/new/choose)
 - 🛠️ **Send a pull request:** see the [contributing guide](CONTRIBUTING.md)
 - ⭐ **Star the repo** if you like it, so others can find it too
 
-A few ideas we're thinking about, none of them promised: calendar and next meeting, clipboard history, more music players, rearranging tabs, and notarized builds.
+A few ideas we're thinking about, none of them promised: calendar and next meeting, clipboard history, more music players, rearranging tabs, fan curves, and notarized builds.
 
 ## Build from source
 

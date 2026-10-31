@@ -15,5 +15,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build the app
         run: scripts/build.sh
+      - name: Check fan control against simulated Macs
+        run: scripts/check-fans.sh
       - name: Build the demo renderer
         run: swift build -c release -Xswiftc -DDEMO --build-path .build-demo

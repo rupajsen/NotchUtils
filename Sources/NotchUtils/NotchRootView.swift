@@ -48,6 +48,7 @@ struct NotchRootView: View {
     @ObservedObject var media: MediaModel
     @ObservedObject var timer: TimerModel
     @ObservedObject var system: SystemModel
+    @ObservedObject var fans: FanModel
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var animation: Animation {
@@ -67,7 +68,7 @@ struct NotchRootView: View {
                 CompactView(
                     activity: controller.activity,
                     notchWidth: controller.notchSize.width,
-                    media: media, timer: timer, system: system
+                    media: media, timer: timer, system: system, fans: fans
                 )
                 .frame(height: controller.notchSize.height)
                 .transition(.opacity)
@@ -103,6 +104,7 @@ struct CompactView: View {
     @ObservedObject var media: MediaModel
     @ObservedObject var timer: TimerModel
     @ObservedObject var system: SystemModel
+    @ObservedObject var fans: FanModel
 
     var body: some View {
         HStack(spacing: 0) {
@@ -132,6 +134,12 @@ struct CompactView: View {
         case .awake:
             Image(systemName: "cup.and.heat.waves.fill")
                 .foregroundStyle(.yellow)
+        case .fans:
+            Image(systemName: "fan.fill")
+                .foregroundStyle(.cyan)
+        case .fansReverted:
+            Image(systemName: "fan.fill")
+                .foregroundStyle(.white)
         case .none:
             EmptyView()
         }
@@ -164,6 +172,13 @@ struct CompactView: View {
             Text(system.batteryLevel, format: .percent.precision(.fractionLength(0)))
                 .monospacedDigit()
                 .foregroundStyle(.green)
+        case .fans:
+            Text(fans.averageRPM / 1000, format: .number.precision(.fractionLength(1)))
+                .monospacedDigit()
+                .foregroundStyle(.cyan)
+                + Text("k").foregroundStyle(.cyan)
+        case .fansReverted:
+            Text("Auto")
         case .awake, .none:
             EmptyView()
         }
@@ -253,6 +268,7 @@ struct ExpandedView: View {
                 case .timer: TimerTab(timer: controller.timer)
                 case .shelf: ShelfTab(shelf: controller.shelf, isTargeted: controller.isDropTargeted)
                 case .system: SystemTab(system: system, quit: controller.quit)
+                case .thermals: ThermalsTab(fans: controller.fans)
                 case .credits: CreditsTab()
                 }
             }
@@ -278,7 +294,7 @@ struct TabBar: View {
                     Image(systemName: tab.symbol)
                         .font(.system(size: 12, weight: .semibold))
                         .foregroundStyle(selection == tab ? .white : .secondary)
-                        .frame(width: 32, height: 24)
+                        .frame(width: 27, height: 24)
                         .background {
                             if selection == tab {
                                 Capsule().fill(.white.opacity(0.18))
@@ -383,6 +399,7 @@ struct CapsuleSlider: View {
     let value: Double
     var range: ClosedRange<Double> = 0...1
     var tint: Color = .white
+    var showsThumb = false
     let onChange: (Double) -> Void
     var onCommit: (Double) -> Void = { _ in }
 
@@ -395,12 +412,24 @@ struct CapsuleSlider: View {
             let span = max(range.upperBound - range.lowerBound, 0.001)
             let fraction = min(max((shown - range.lowerBound) / span, 0), 1)
             let active = isHovering.value || dragValue.value != nil
+            let thumbWidth: CGFloat = 24
             ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.18))
-                Capsule().fill(active ? tint : tint.opacity(0.85))
-                    .frame(width: max(geometry.size.width * fraction, 0))
+                Group {
+                    Capsule().fill(.white.opacity(0.22))
+                    Capsule().fill(showsThumb || active ? tint : tint.opacity(0.85))
+                        .frame(width: max(geometry.size.width * fraction, 0))
+                }
+                .frame(height: showsThumb ? 5 : (active ? 8 : 5))
+
+                if showsThumb {
+                    Capsule()
+                        .fill(.white)
+                        .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
+                        .frame(width: thumbWidth, height: 15)
+                        .scaleEffect(dragValue.value == nil ? 1 : 1.12)
+                        .offset(x: (geometry.size.width - thumbWidth) * fraction)
+                }
             }
-            .frame(height: active ? 8 : 5)
             .frame(maxHeight: .infinity)
             .contentShape(Rectangle())
             .animation(.spring(response: 0.25, dampingFraction: 0.75), value: active)
