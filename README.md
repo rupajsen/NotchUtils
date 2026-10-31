@@ -54,7 +54,7 @@ The notch widens only when there's something to show: the current track, a runni
 <img src="docs/images/closed.png" width="720" alt="The closed notch showing album art on the left and audio bars on the right">
 
 ### 🪶 And it's light
-Written in Swift with SwiftUI and AppKit. No Electron, no dependencies, no analytics. It uses about 0.3% CPU sitting idle with music playing (measured on an M1 Pro), and only checks what it needs while you're looking at it.
+Written in Swift with SwiftUI and AppKit. No Electron, no dependencies, no analytics. It uses around 3% of one CPU core while closed with music playing (measured on an M1 Pro), and only checks what it needs while you're looking at it.
 
 ## Install
 
