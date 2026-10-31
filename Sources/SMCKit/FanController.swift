@@ -82,6 +82,9 @@ public final class FanController {
         case "status":
             return statusLine()
         case "ping":
+            // After sleep the app's check-in can arrive before the next tick, and mustn't revive an
+            // expired lease.
+            tick()
             if fans.contains(where: \.isManual) { leaseExpiry = now().addingTimeInterval(Self.leaseSeconds) }
             return statusLine()
         case "auto":

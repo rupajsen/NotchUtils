@@ -203,7 +203,7 @@ public enum FanHelper {
     public static let socketPath = "/var/run/\(label).sock"
     /// Bump when the helper's behaviour changes, so an updated app asks to replace the installed one.
     /// Helpers from before this existed don't report it, and count as version 1.
-    public static let version = 2
+    public static let version = 3
 
     public struct Status {
         public var manual: [Bool]

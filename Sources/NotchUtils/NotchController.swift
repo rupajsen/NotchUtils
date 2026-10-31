@@ -190,9 +190,11 @@ final class NotchController: ObservableObject {
               let left = screen.auxiliaryTopLeftArea,
               let right = screen.auxiliaryTopRightArea
         else {
-            // Lid closed, so there is no notch to live in.
+            // Lid closed, so there is no notch to live in. With an external display the Mac keeps
+            // running, and manual fans shouldn't carry on with no way to see or change them.
             hasNotchScreen = false
             panel.orderOut(nil)
+            fans.setMode(.automatic)
             return
         }
         hasNotchScreen = true

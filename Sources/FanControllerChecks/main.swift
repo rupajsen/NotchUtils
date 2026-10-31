@@ -134,6 +134,16 @@ do {
     check(controller.handle("set 0 3500") != "err\n", "allows again once cool")
 }
 
+print("--- Waking from sleep")
+do {
+    let (smc, controller) = make(.direct, fans: 2)
+    _ = controller.handle("set 0 3500")
+    // A minute passes with no ticks, as if asleep, and the app's check-in arrives first.
+    time.addTimeInterval(60)
+    let reply = controller.handle("ping")
+    check(field(reply, "reason") == "lease" && smc.byte("F0Md") == 0, "a late check-in doesn't revive an expired lease")
+}
+
 print("--- M3/M4: unlock flag")
 do {
     let (smc, controller) = make(.unlock, fans: 2)
