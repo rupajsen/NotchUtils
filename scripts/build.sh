@@ -13,6 +13,8 @@ APP=dist/NotchUtils.app
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp .build/release/NotchUtils "$APP/Contents/MacOS/NotchUtils"
+cp .build/release/NotchUtilsFanHelper "$APP/Contents/MacOS/NotchUtilsFanHelper"
+cp scripts/helper/* "$APP/Contents/Resources/"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -41,6 +43,7 @@ mkdir -p "$ICONSET"
 swift scripts/make-icon.swift "$ICONSET"
 iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
 
+codesign --force --sign "${SIGN_IDENTITY:--}" "$APP/Contents/MacOS/NotchUtilsFanHelper"
 codesign --force --sign "${SIGN_IDENTITY:--}" "$APP"
 echo "Built $APP"
 

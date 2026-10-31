@@ -8,7 +8,7 @@ import SwiftUI
 private let log = Logger(subsystem: "io.github.rupajsen.notchutils", category: "notch")
 
 enum NotchTab: String, CaseIterable, Identifiable {
-    case media, timer, shelf, system, credits
+    case media, timer, shelf, system, thermals, credits
 
     var id: String { rawValue }
 
@@ -18,6 +18,7 @@ enum NotchTab: String, CaseIterable, Identifiable {
         case .timer: "timer"
         case .shelf: "tray.full.fill"
         case .system: "slider.horizontal.3"
+        case .thermals: "thermometer.medium"
         case .credits: "info.circle.fill"
         }
     }
@@ -28,6 +29,7 @@ enum NotchTab: String, CaseIterable, Identifiable {
         case .timer: "Timer"
         case .shelf: "Shelf"
         case .system: "System"
+        case .thermals: "Thermals"
         case .credits: "Credits"
         }
     }
@@ -35,14 +37,14 @@ enum NotchTab: String, CaseIterable, Identifiable {
 
 /// What the closed notch is showing in its "wings", most urgent first.
 enum CompactActivity: Equatable {
-    case none, awake, media, timer, charging, timerDone
+    case none, awake, media, fans, fansReverted, timer, charging, timerDone
 
     var wing: CGFloat {
         switch self {
         case .none: 0
         case .awake, .media: 34
         case .charging: 50
-        case .timer, .timerDone: 62
+        case .timer, .timerDone, .fans, .fansReverted: 62
         }
     }
 }
@@ -77,6 +79,7 @@ final class NotchController: ObservableObject {
     let timer = TimerModel()
     let shelf = ShelfModel()
     let system = SystemModel()
+    let fans = FanModel()
 
     private var panel: NotchPanel!
     private var notchCenterX: CGFloat = 0
@@ -101,6 +104,9 @@ final class NotchController: ObservableObject {
         system.onPluggedIn = { [weak self] in
             self?.show(transient: .charging, for: 3)
         }
+        fans.onReverted = { [weak self] in
+            self?.show(transient: .fansReverted, for: 5)
+        }
         NotificationCenter.default.addObserver(
             forName: NSApplication.didChangeScreenParametersNotification,
             object: nil, queue: .main
@@ -117,6 +123,7 @@ final class NotchController: ObservableObject {
     var activity: CompactActivity {
         if let transient { return transient }
         if timer.state != .idle { return .timer }
+        if fans.isManual { return .fans }
         if media.isPlaying { return .media }
         if system.keepAwake { return .awake }
         return .none
@@ -173,7 +180,7 @@ final class NotchController: ObservableObject {
         panel.ignoresMouseEvents = true
         panel.appearance = NSAppearance(named: .darkAqua)
 
-        let root = NotchRootView(controller: self, media: media, timer: timer, system: system)
+        let root = NotchRootView(controller: self, media: media, timer: timer, system: system, fans: fans)
         panel.contentView = NotchHostingView(rootView: root)
         return panel
     }
@@ -183,9 +190,11 @@ final class NotchController: ObservableObject {
               let left = screen.auxiliaryTopLeftArea,
               let right = screen.auxiliaryTopRightArea
         else {
-            // Lid closed, so there is no notch to live in.
+            // Lid closed, so there is no notch to live in. With an external display the Mac keeps
+            // running, and manual fans shouldn't carry on with no way to see or change them.
             hasNotchScreen = false
             panel.orderOut(nil)
+            fans.setMode(.automatic)
             return
         }
         hasNotchScreen = true

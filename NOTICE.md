@@ -16,6 +16,10 @@ The interface shows SF Symbols, which macOS supplies at runtime. They are Apple'
 
 Apple, Mac, MacBook Pro, macOS, Apple Music and AirDrop are trademarks of Apple Inc. Spotify is a trademark of Spotify AB. They are named here only to describe what NotchUtils works with. NotchUtils is an independent project and isn't affiliated with, endorsed by or sponsored by Apple or Spotify.
 
+## Hardware control
+
+Apple doesn't document the fan and temperature keys that NotchUtils uses. What it knows about them for M3 and later chips comes from public notes by other developers, including [macos-smc-fan](https://github.com/agoodkind/macos-smc-fan), [FanDial](https://github.com/whybepb/fan-dial) and [FanFit](https://github.com/jason301c/fanfit). No code from those projects is included. Mac model identifiers come from Apple's support pages.
+
 ## Demo images
 
 The track, artist and artwork in the screenshots and demo GIF are made up for this project. `scripts/render-demo.sh` generates them.

@@ -24,7 +24,13 @@ Thanks for helping out! Suggestions are as valuable as code, so please don't fee
    dist/NotchUtils.app/Contents/MacOS/NotchUtils --open timer
    ```
 
-4. Open a pull request saying what changed and why. Add a screenshot or recording for anything visible.
+4. If you changed fan control, run the simulated checks. They need no root and touch no hardware:
+
+   ```bash
+   ./scripts/check-fans.sh
+   ```
+
+5. Open a pull request saying what changed and why. Add a screenshot or recording for anything visible.
 
 ### Guidelines
 
@@ -32,6 +38,8 @@ Thanks for helping out! Suggestions are as valuable as code, so please don't fee
 - **Stay native.** Prefer system frameworks, and discuss any new dependency first.
 - **Don't take focus.** The panel must never take keyboard focus from the app you're working in.
 - **Protect privacy.** No analytics, and no new network requests without a clear reason.
+- **Treat the helper with care.** It runs as root, so keep it small: new abilities need a good reason, safety rules belong in the helper rather than the app, and any behaviour change must bump `FanHelper.version` so people are asked to update it.
+- **Be honest about hardware.** Mark a Mac model as tested only after someone has run it on that model.
 - **Match the code around you.** New source files start with the same two-line SPDX and copyright header.
 
 ### Screenshots
@@ -41,6 +49,10 @@ The images in `docs/images` come from the app's own views with made-up data. If 
 ```bash
 ./scripts/render-demo.sh
 ```
+
+## Add a Mac
+
+New Macs go in the table in `Sources/SMCKit/MacCatalog.swift`, using identifiers from Apple's model pages.
 
 ## Licensing
 

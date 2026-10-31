@@ -28,6 +28,8 @@ Releases are built by GitHub Actions, so every DMG comes from a clean checkout o
    - Hover opens and closes the notch.
    - Now Playing shows and controls your music.
    - A file can be dragged onto the Shelf and back out.
+   - Fan control sets up, works in Manual and Max, and the helper can be removed.
+   - If `FanHelper.version` changed, an existing helper is offered an update.
    - Credits shows the new version.
 
 Pick version numbers using [Semantic Versioning](https://semver.org): bug fixes bump the last number, new features the middle one and breaking changes the first.

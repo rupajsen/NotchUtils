@@ -6,6 +6,10 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var controller: NotchController?
 
+    func applicationWillTerminate(_ notification: Notification) {
+        controller?.fans.restoreAutomaticNow()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         // `--open <tab>` starts pinned open on a tab.
         let args = CommandLine.arguments
@@ -18,7 +22,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEMO
         if let i = args.firstIndex(of: "--demo-capture"), i + 1 < args.count, let controller {
             DispatchQueue.main.async {
-                DemoCapture(controller: controller, directory: args[i + 1]).run()
+                let capture = DemoCapture(controller: controller, directory: args[i + 1])
+                if args.contains("--thermals-states") {
+                    capture.runThermalsStates()
+                } else {
+                    capture.run()
+                }
             }
             return
         }
