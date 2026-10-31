@@ -134,6 +134,21 @@ do {
     check(controller.handle("set 0 3500") != "err\n", "allows again once cool")
 }
 
+print("--- Back to manual straight after automatic")
+do {
+    let (smc, controller) = make(.direct, fans: 1)
+    _ = controller.handle("set 0 6000")
+    _ = controller.handle("auto")
+    check(smc.float("F0Tg") == 6000, "the target key still reads the old speed")
+    let reply = controller.handle("set 0 3000")
+    check(field(reply, "floor") == "2400", "keeps the real floor instead of the stale speed")
+    check(smc.float("F0Tg") == 3000, "so a lower speed is still allowed")
+    _ = controller.handle("auto")
+    smc.setFloat("F0Tg", 2800)
+    time.addTimeInterval(6)
+    check(field(controller.handle("set 0 2000"), "floor") == "2800", "reads the live automatic speed once settled")
+}
+
 print("--- Waking from sleep")
 do {
     let (smc, controller) = make(.direct, fans: 2)

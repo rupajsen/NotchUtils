@@ -16,6 +16,8 @@ public final class FanController {
     static let engageTimeout: TimeInterval = 10
     /// The mode can read stale for a moment after a successful write.
     static let settleSeconds: TimeInterval = 3
+    /// How long a fan's target key keeps reading the old manual speed after returning to automatic.
+    static let staleTargetSeconds: TimeInterval = 5
 
     private struct FanState {
         var isManual = false
@@ -35,6 +37,8 @@ public final class FanController {
     private let hasUnlockFlag: Bool
 
     private var fans: [FanState]
+    private var previousFloors: [Double]
+    private var restoredAt = Date.distantPast
     private var leaseExpiry = Date.distantPast
     private var reason = "none"
 
@@ -52,6 +56,7 @@ public final class FanController {
         modeKeyFormat = FanSupport.modeKey(smc, fan: 0).hasSuffix("md") ? "md" : "Md"
         hasUnlockFlag = smc.exists("Ftst")
         fans = [FanState](repeating: FanState(), count: fanCount)
+        previousFloors = [Double](repeating: 0, count: fanCount)
     }
 
     private func modeKey(_ fan: Int) -> String { "F\(fan)\(modeKeyFormat)" }
@@ -66,8 +71,10 @@ public final class FanController {
         let wasManual = fans.contains(where: \.isManual)
         for fan in 0..<fanCount {
             _ = smc.write(modeKey(fan), [0])
+            if fans[fan].isManual { previousFloors[fan] = fans[fan].floor }
             fans[fan] = FanState()
         }
+        if wasManual { restoredAt = now() }
         // Clearing this last is what hands the fans back to macOS on chips that have it.
         if hasUnlockFlag { _ = smc.write("Ftst", [0]) }
         if let why, wasManual {
@@ -138,7 +145,9 @@ public final class FanController {
         if !fans[fan].isManual {
             // Capture what macOS wants right now before taking over, because that's the floor.
             let automatic = smc.float("F\(fan)Tg") ?? smc.float("F\(fan)Ac") ?? maximum
-            fans[fan].floor = Double(max(automatic, minimum))
+            // Right after returning to automatic that still reads the old manual speed.
+            let isStale = now().timeIntervalSince(restoredAt) < Self.staleTargetSeconds && previousFloors[fan] > 0
+            fans[fan].floor = isStale ? previousFloors[fan] : Double(max(automatic, minimum))
             fans[fan].isManual = true
             fans[fan].deadline = now().addingTimeInterval(Self.engageTimeout)
         }

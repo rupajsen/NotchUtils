@@ -12,7 +12,7 @@ import Foundation
 import SMCKit
 
 /// Averages for each chip group. `--temp-limit` lowers this, for testing the fallback.
-var temperatureLimit = 95.0
+var temperatureLimit = 90.0
 if let index = CommandLine.arguments.firstIndex(of: "--temp-limit"), index + 1 < CommandLine.arguments.count,
    let limit = Double(CommandLine.arguments[index + 1]) {
     temperatureLimit = limit

@@ -129,7 +129,7 @@ What the helper does, and doesn't do:
 
 The risks are worth understanding:
 
-- **Manual doesn't react to load.** The fans hold the speed you set, even if macOS would have gone faster, until the temperature fallback steps in at a 95°C average. For heavy work, choose a high speed or Max, or stay on Automatic.
+- **Manual doesn't react to load.** The fans hold the speed you set, even if macOS would have gone faster, until the temperature fallback steps in at a 90°C average. For heavy work, choose a high speed or Max, or stay on Automatic.
 - **This uses undocumented hardware controls.** Apple could change how they behave in any macOS update. NotchUtils is provided without warranty, as the [license](LICENSE) says.
 
 To remove the helper, go to the **Thermals** tab, switch to Automatic and click the trash icon.

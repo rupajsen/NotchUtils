@@ -616,7 +616,7 @@ struct TemperatureMeter: View {
 
     private var tint: Color {
         switch reading.celsius {
-        case 95...: return .red
+        case 90...: return .red
         case 85...: return .orange
         default: break
         }
